@@ -45,9 +45,11 @@ pipeline {
 
         stage('OWASP Dependency Check') {
     steps {
-        dependencyCheck odcInstallation: 'DC'
+        dependencyCheck additionalArguments: "--nvdApiKey=${NVD_API_KEY}",
+                        odcInstallation: 'DC'
     }
 }
+
 
         stage('Build') {
             steps {
