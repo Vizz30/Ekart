@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-    SCANNER_HOME = tool 'sonar-scanner'
-}
-
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
 
     tools {
         maven 'maven3'
@@ -12,6 +11,7 @@ pipeline {
     }
 
     stages {
+
         stage('git checkout') {
             steps {
                 git branch: 'master', url: 'https://github.com/Vizz30/Ekart.git'
@@ -42,17 +42,12 @@ pipeline {
         }
 
         stage('OWASP Dependency Check') {
-    steps {
-        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
-            dependencyCheck additionalArguments: "--nvdApiKey=${NVD_API_KEY}",
-                            odcInstallation: 'DC'
-        }
-    }
-}
-
-
-             }
-        }
+            steps {
+                withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                    dependencyCheck additionalArguments: "--nvdApiKey=${NVD_API_KEY}",
+                                    odcInstallation: 'DC'
+                }
+            }
         }
 
         stage('Build') {
@@ -68,39 +63,41 @@ pipeline {
                 }
             }
         }
-        
 
         stage('build and Tag docker image') {
             steps {
                 script {
-                        sh "docker build -t youngminds73/ekart:latest -f docker/Dockerfile ."
-                    }
-            }
-        }
-
-        stage('Push image to Hub'){
-            steps{
-                script{
-                   withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
-                   sh 'docker login -u vishalchotaia3008 -p ${dockerhubpwd}'}
-                   sh 'docker push youngminds73/ekart:latest'
+                    sh "docker build -t youngminds73/ekart:latest -f docker/Dockerfile ."
                 }
             }
         }
-        stage('EKS and Kubectl configuration'){
-            steps{
-                script{
+
+        stage('Push image to Hub') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
+                        sh 'docker login -u vishalchotaia3008 -p ${dockerhubpwd}'
+                    }
+                    sh 'docker push youngminds73/ekart:latest'
+                }
+            }
+        }
+
+        stage('EKS and Kubectl configuration') {
+            steps {
+                script {
                     sh 'aws eks update-kubeconfig --region ap-south-1 --name project-cluster'
                 }
             }
         }
-        stage('Deploy to k8s'){
-            steps{
-                script{
+
+        stage('Deploy to k8s') {
+            steps {
+                script {
                     sh 'kubectl apply -f deploymentservice.yml'
                 }
             }
         }
-    }
 
+    }
 }
