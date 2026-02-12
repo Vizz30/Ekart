@@ -33,10 +33,12 @@ pipeline {
         stage('SonarQube analysis') {
             steps {
                 withSonarQubeEnv('sonar-scanner') {
-                    sh "${env.SCANNER_HOME}/bin/sonar-scanner \
+                    sh """
+                        ${env.SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=EKART \
                         -Dsonar.projectName=EKART \
-                        -Dsonar.java.binaries=target/classes"
+                        -Dsonar.java.binaries=target/classes
+                    """
                 }
             }
         }
@@ -58,7 +60,13 @@ pipeline {
 
         stage('deploy to Nexus') {
             steps {
-                withMaven(globalMavenSettingsConfig: 'global-maven', jdk: 'jdk-17', maven: 'maven3', mavenSettingsConfig: '', traceability: true) {
+                withMaven(
+                    globalMavenSettingsConfig: 'global-maven',
+                    jdk: 'jdk-17',
+                    maven: 'maven3',
+                    mavenSettingsConfig: '',
+                    traceability: true
+                ) {
                     sh "mvn deploy -DskipTests=true"
                 }
             }
@@ -67,24 +75,24 @@ pipeline {
         stage('build and Tag docker image') {
             steps {
                 script {
-                    sh "docker build -t youngminds73/ekart:latest -f docker/Dockerfile ."
+                    sh "docker build -t vishalchotaia3008/ekart:latest -f docker/Dockerfile ."
                 }
             }
         }
 
         stage('Push image to Hub') {
-    steps {
-        script {
-            withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
-                sh """
-                    echo \$dockerhubpwd | docker login -u vishalchotaia3008 --password-stdin
-                    docker push vishalchotaia3008/ekart:latest
-                """
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
+                        sh """
+                            echo \$dockerhubpwd | docker login -u vishalchotaia3008 --password-stdin
+                            docker push vishalchotaia3008/ekart:latest
+                        """
+                    }
+                }
             }
         }
-    }
-}
-        
+
         stage('EKS and Kubectl configuration') {
             steps {
                 script {
@@ -100,6 +108,5 @@ pipeline {
                 }
             }
         }
-
     }
 }
